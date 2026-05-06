@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حجز صالون الحلاقة</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="style.css">
+
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <script type="text/javascript">
+        (function() {
+            emailjs.init({
+              publicKey: "mEqm2DXnx2ybOqVTu",
+            });
+        })();
+    </script>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <main class="max-w-md mx-auto mt-0 bg-white p-6 rounded-lg shadow-lg">
+        
+        <!-- القسم الأول: شاشة الترحيب -->
+        <section id="welcome-section" class="flex flex-col items-center justify-start min-h-[95vh] animate-fade-in">
+            <!-- مكان اللوجو -->
+            <div class="w-24 h-24 bg-gray-100 rounded-full mb-48 flex items-center justify-center text-gray-400 shadow-inner border border-gray-200">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">احجز موعدك</h1>
+            <p class="text-gray-500 mb-56 text-center">مع أفضل الحلاقين بخطوات بسيطة وسريعة</p>
+            
+            <!-- زرار البداية -->
+            <button id="start-booking-btn" class="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
+                ابدأ الحجز الآن
+            </button>
+        </section>
+
+        <!-- القسم الثاني: اختيار الحلاق (مخفي مبدئياً) -->
+        <section id="barber-section" class="hidden min-h-[95vh] animate-fade-in">
+            <!-- الهيدر وزرار الرجوع -->
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">اختر الحلاق</h2>
+                <button id="back-to-welcome" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
+                    <!-- أيقونة سهم يمين عشان الموقع بالعربي -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+            
+            <!-- شبكة الحلاقين -->
+            <div class="flex flex-col gap-4">
+                <!-- كارت الحلاق الأول -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
+                    <!-- استخدمنا روابط خارجية للصور مؤقتاً عشان نتجنب أي مشاكل في مسارات الملفات (File Paths) -->
+                    <img src="https://ui-avatars.com/api/?name=Ahmed&background=0D8ABC&color=fff" alt="أحمد" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
+                    <h3 class="font-bold text-gray-900 text-lg">أحمد</h3>
+                </div>
+
+                <!-- كارت الحلاق الثاني -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
+                    <img src="https://ui-avatars.com/api/?name=Mohamed&background=1D4ED8&color=fff" alt="محمد" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
+                    <h3 class="font-bold text-gray-900 text-lg">محمد</h3>
+                </div>
+
+                <!-- كارت الحلاق الثالث -->
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
+                    <img src="https://ui-avatars.com/api/?name=Mahmoud&background=1D4ED8&color=fff" alt="محمود" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
+                    <h3 class="font-bold text-gray-900 text-lg">محمود</h3>
+                </div>
+            </div>
+        </section>
+
+        <!-- القسم الثالث: اختيار التاريخ والوقت (مخفي مبدئياً) -->
+        <section id="datetime-section" class="hidden min-h-[95vh] animate-fade-in">
+            <!-- الهيدر وزرار الرجوع -->
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">الموعد المناسب</h2>
+                <button id="back-to-barbers" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+
+            <!-- اختيار اليوم -->
+            <h3 class="font-semibold text-gray-700 mb-3">اختر اليوم</h3>
+            <div id="days-container" class="flex gap-3 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+                <!-- الزراير هتنزل هنا -->
+            </div>
+
+            <!-- اختيار الوقت -->
+            <h3 class="font-semibold text-gray-700 mb-3">اختر الوقت</h3>
+            <div id="times-container" class="grid grid-cols-3 gap-3">
+                <!-- الزراير هتنزل هنا -->
+            </div>
+            
+            <!-- زرار المتابعة -->
+            <button id="continue-to-confirm" class="w-full mt-8 bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
+                متابعة
+            </button>
+        </section>
+
+        <!-- القسم الرابع: تأكيد الحجز (مخفي مبدئياً) -->
+        <section id="confirmation-section" class="hidden min-h-[95vh] animate-fade-in">
+            <!-- الهيدر وزرار الرجوع -->
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-900">تأكيد الحجز</h2>
+                <button id="back-to-datetime" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+
+            <!-- ملخص الحجز للعميل -->
+            <div class="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-100">
+                <p class="text-sm text-gray-600 mb-1">الحلاق: <span id="summary-barber" class="font-bold text-black"></span></p>
+                <p class="text-sm text-gray-600">الموعد: <span id="summary-datetime" class="font-bold text-black"></span></p>
+            </div>
+
+            <!-- فورم إدخال البيانات -->
+            <form id="booking-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">الاسم بالكامل</label>
+                    <input type="text" id="user-name" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none transition-all" placeholder="أدخل اسمك">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">رقم الموبايل</label>
+                    <!-- خلينا اتجاه الرقم ltr عشان الأرقام تتكتب بشكل سليم -->
+                    <input type="tel" id="user-phone" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-left" dir="ltr" placeholder="01X XXXX XXXX">
+                </div>
+                
+                <button type="submit" id="confirm-booking-btn" class="w-full mt-6 bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all shadow-lg active:scale-95 flex justify-center items-center">
+                    تأكيد الحجز النهائي
+                </button>
+            </form>
+        </section>
+
+            <!-- القسم الخامس: شاشة النجاح (مخفي مبدئياً) -->
+        <section id="success-section" class="hidden min-h-[95vh] animate-fade-in text-center py-8">
+            <!-- أيقونة علامة صح -->
+            <div class="w-24 h-24 bg-green-100 rounded-full mx-auto mb-6 flex items-center justify-center text-green-600 shadow-inner">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">تم تأكيد حجزك!</h2>
+            <p class="text-gray-500 mb-8">في انتظارك في الموعد، شكراً لاختيارك صالوننا.</p>
+
+            <!-- ملخص الحجز النهائي -->
+            <div class="bg-gray-50 p-6 rounded-2xl mb-8 border border-gray-100 text-right space-y-3">
+                <p class="text-sm text-gray-600">الاسم: <span id="final-name" class="font-bold text-black text-base"></span></p>
+                <p class="text-sm text-gray-600">رقم الموبايل: <span id="final-phone" class="font-bold text-black text-base" dir="ltr"></span></p>
+                <p class="text-sm text-gray-600">الحلاق: <span id="final-barber" class="font-bold text-black text-base"></span></p>
+                <p class="text-sm text-gray-600">الموعد: <span id="final-datetime" class="font-bold text-black text-base"></span></p>
+            </div>
+
+            <!-- زرار العودة للرئيسية (بدون سهم رجوع) -->
+            <button id="return-home-btn" class="w-full border-2 border-black text-black font-bold py-4 rounded-xl hover:bg-black hover:text-white transition-all active:scale-95">
+                إنهاء والعودة للرئيسية
+            </button>
+        </section>
+    </main>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
