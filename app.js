@@ -174,7 +174,7 @@ for (let i = 0; i < 14; i++) {
 
     // بنضيف زرار لكل يوم في المتغير بتاعنا
     daysHTML += `
-        <button class="date-btn shrink-0 w-16 h-20 bg-white border border-gray-200 text-gray-700 rounded-xl flex flex-col items-center justify-center hover:border-black transition-colors">
+        <button class="date-btn flex-shrink-0 w-16 h-20 bg-white border border-gray-200 text-gray-700 rounded-xl flex flex-col items-center justify-center hover:border-black transition-colors">
             <span class="text-sm">${dayName}</span>
             <span class="text-xl font-bold">${dayNum}</span>
         </button>
