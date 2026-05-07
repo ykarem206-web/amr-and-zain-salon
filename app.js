@@ -256,12 +256,14 @@ const checkAvailableTimes = async () => {
         });
 
         // 1. التنظيف العميق للمواعيد اللي جاية من فايربيز (مسح أي حروف مخفية)
-        const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d:صم]/g, ''));
+        const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
 
         // 2. قفل المواعيد المحجوزة
         timeButtons.forEach(btn => {
             // تنظيف وقت الزرار عشان المقارنة تنجح 
-            const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d:صم]/g, '');
+            const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
+
+            console.log(`مقارنة: الزرار [${cleanBtnTime}] | الداتابيز:`, cleanBookedTimes);
 
             if (cleanBookedTimes.includes(cleanBtnTime)) {
                 // لو محجوز: اقفل الزرار ولونه أحمر
