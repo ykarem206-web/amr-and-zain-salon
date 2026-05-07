@@ -221,7 +221,7 @@ const checkAvailableTimes = async () => {
     // 2. تطبيق منطق إجازة الإثنين
     const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
     if (selectedDayBtn) {
-        const dayName = selectedDayBtn.querySelector('span.text-sm').innerText;
+        const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
         if (dayName === 'الإثنين') {
             timeButtons.forEach(timeBtn => {
                 timeBtn.disabled = true;
