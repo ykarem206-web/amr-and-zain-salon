@@ -162,6 +162,7 @@ bookingForm.addEventListener('submit', async (e) => {
 // 7. توليد الأيام تلقائياً (مثلاً لمدة 14 يوم قدام)
 const daysContainer = document.getElementById('days-container');
 const daysOfWeek = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+const monthsOfYear = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 let daysHTML = '';
 
 // هنعمل لوب يلف 14 مرة عشان يطبع 14 يوم
@@ -171,12 +172,14 @@ for (let i = 0; i < 14; i++) {
     
     let dayName = daysOfWeek[d.getDay()]; // اسم اليوم
     let dayNum = d.getDate(); // رقم اليوم في الشهر
+    let monthName = monthsOfYear[d.getMonth()]; // اسم الشهر
 
     // بنضيف زرار لكل يوم في المتغير بتاعنا
     daysHTML += `
-        <button data-date="${dayName} ${dayNum}" class="date-btn flex-shrink-0 w-16 h-20 bg-white border border-gray-200 text-gray-700 cursor-pointer rounded-xl flex flex-col items-center justify-center">
-            <span class="text-sm">${dayName}</span>
+        <button data-date="${dayName} ${dayNum} ${monthName}" class="date-btn flex-shrink-0 w-20 h-24 cursor-pointer bg-white border border-gray-200 text-gray-700 rounded-xl flex flex-col items-center justify-center gap-1 shadow-sm hover:border-gray-400 transition-colors">
+            <span class="text-xs opacity-75">${dayName}</span>
             <span class="text-xl font-bold">${dayNum}</span>
+            <span class="text-xs font-medium opacity-90">${monthName}</span>
         </button>
     `;
 }
@@ -327,7 +330,7 @@ timeButtons.forEach(button => {
         });
         
         button.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
-        button.classList.add('bg-black', 'text-white', 'border-black');
+        button.classList.add('bg-black', 'text-white', 'border-white');
         
         bookingState.time = button.innerText.trim();
         console.log('الوقت المختار:', bookingState.time);
@@ -414,7 +417,7 @@ if (searchBtn) {
                             <p class="text-sm font-bold text-gray-800">الحلاق: ${data.barberName}</p>
                             <p class="text-xs text-gray-600 mt-1">${data.bookingDate} | ${data.bookingTime}</p>
                         </div>
-                        <button onclick="cancelBooking('${docId}')" class="bg-white text-red-500 border border-red-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition shadow-sm">
+                        <button onclick="cancelBooking('${docId}')" class="bg-white cursor-pointer text-red-500 border border-red-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition shadow-sm">
                             إلغاء
                         </button>
                     </div>
