@@ -185,25 +185,20 @@ daysContainer.innerHTML = daysHTML;
 
 
 // 8. توليد الأوقات المتاحة
+
+// === كود رسم زراير الأوقات في الشاشة ===
 const timesContainer = document.getElementById('times-container');
-// تقدر تزود أو تنقص الأوقات دي براحتك جداً
-const availableTimes = [
-    '12:00 م', '01:00 م', '02:00 م', '03:00 م', 
-    '04:00 م', '05:00 م', '06:00 م', '07:00 م', 
+const availableTimesList = [
+    '12:00 م', '01:00 م', '02:00 م', '03:00 م',
+    '04:00 م', '05:00 م', '06:00 م', '07:00 م',
     '08:00 م', '09:00 م', '10:00 م', '11:00 م'
 ];
 let timesHTML = '';
-
-availableTimes.forEach(time => {
-    timesHTML += `
-        <button class="time-btn py-2 border border-gray-200 bg-white text-gray-700 rounded-lg hover:border-black transition-colors font-medium text-sm">
-            ${time}
-        </button>
-    `;
+availableTimesList.forEach(time => {
+    timesHTML += `<button class="time-btn py-2 border border-gray-200 bg-white text-gray-700 rounded-lg hover:border-black transition-colors font-medium text-sm">${time}</button>`;
 });
 timesContainer.innerHTML = timesHTML;
-
-
+// ==========================================
 // 9. تفعيل الكليك على الأيام والأوقات (مع جلب المواعيد المحجوزة من فايربيز)
 const dateButtons = document.querySelectorAll('.date-btn');
 const timeButtons = document.querySelectorAll('.time-btn');
@@ -236,31 +231,54 @@ const checkAvailableTimes = async () => {
     if (!bookingState.barber || !bookingState.date) return;
 
     try {
-        // تجهيز الفلتر (الاستعلام)
+        // تجهيز الفلتر
         const q = query(
-            collection(db, "bookings"), 
+            collection(db, "bookings"),
             where("barberName", "==", bookingState.barber),
             where("bookingDate", "==", bookingState.date)
         );
 
         // جلب البيانات
         const querySnapshot = await getDocs(q);
-        const bookedTimes = []; 
+        const bookedTimes = [];
         
         querySnapshot.forEach((doc) => {
-            bookedTimes.push(doc.data().bookingTime);
+            // لاحظ هنا استخدمنا bookingTime زي ما هي عندك في فايربيز
+            if (doc.data().bookingTime) {
+                bookedTimes.push(doc.data().bookingTime);
+            }
         });
 
-        console.log("المواعيد المحجوزة لهذا اليوم:", bookedTimes);
+        // 1. التنظيف العميق للمواعيد اللي جاية من فايربيز (مسح أي حروف مخفية)
+        const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d:صم]/g, ''));
 
-        // 4. قفل المواعيد اللي رجعت من فايربيز
+        // 2. قفل المواعيد المحجوزة
         timeButtons.forEach(btn => {
-            // بنستخدم trim عشان نتأكد إن مفيش مسافات زيادة تلخبط المقارنة
-            if (bookedTimes.includes(btn.innerText.trim())) {
+            // تنظيف وقت الزرار عشان المقارنة تنجح 
+            const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d:صم]/g, '');
+
+            if (cleanBookedTimes.includes(cleanBtnTime)) {
+                // لو محجوز: اقفل الزرار ولونه أحمر
                 btn.disabled = true;
-                btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black');
-                // لون أحمر باهت للمواعيد المحجوزة
+                btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white');
                 btn.classList.add('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100');
+                
+                // ضيف كلمة محجوز جنب الوقت لو مش موجودة
+                if (!btn.innerText.includes('(محجوز)')) {
+                    btn.innerText = btn.innerText + ' (محجوز)';
+                }
+            } else {
+                // لو متاح: لازم نرجع كل حاجة لأصلها عشان لو كان مقفول قبل كده يفتح
+                btn.disabled = false; // افتح الزرار تاني
+                
+                // شيل الألوان الحمراء والأسود
+                btn.classList.remove('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100', 'bg-black', 'text-white');
+                
+                // رجع الألوان الطبيعية بتاعة الزرار المتاح
+                btn.classList.add('bg-white', 'text-gray-700', 'hover:border-black');
+                
+                // شيل كلمة محجوز
+                btn.innerText = btn.innerText.replace('(محجوز)', '').trim();
             }
         });
     } catch (error) {
