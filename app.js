@@ -1,6 +1,6 @@
 // --- إعدادات Firebase وقاعدة البيانات ---
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 const firebaseConfig = {
   apiKey: "AIzaSyA1A_MxTa6ZRa-Dp3Dt0Fw87w7fASO4PoU",
   authDomain: "amr-and-zain.firebaseapp.com",
@@ -174,7 +174,7 @@ for (let i = 0; i < 14; i++) {
 
     // بنضيف زرار لكل يوم في المتغير بتاعنا
     daysHTML += `
-        <button data-date="${dayName} ${dayNum}" class="date-btn flex-shrink-0 w-16 h-20 bg-white border border-gray-200 text-gray-700 rounded-xl flex flex-col items-center justify-center">
+        <button data-date="${dayName} ${dayNum}" class="date-btn flex-shrink-0 w-16 h-20 bg-white border border-gray-200 text-gray-700 cursor-pointer rounded-xl flex flex-col items-center justify-center">
             <span class="text-sm">${dayName}</span>
             <span class="text-xl font-bold">${dayNum}</span>
         </button>
@@ -195,7 +195,7 @@ const availableTimesList = [
 ];
 let timesHTML = '';
 availableTimesList.forEach(time => {
-    timesHTML += `<button class="time-btn py-2 border border-gray-200 bg-white text-gray-700 rounded-lg hover:border-black transition-colors font-medium text-sm">${time}</button>`;
+    timesHTML += `<button class="time-btn py-2 border border-gray-200 bg-white text-gray-700 rounded-lg hover:border-white cursor-pointer transition-colors font-medium text-sm">${time}</button>`;
 });
 timesContainer.innerHTML = timesHTML;
 // ==========================================
@@ -347,3 +347,110 @@ document.getElementById('return-home-btn').addEventListener('click', () => {
     // الرجوع للشاشة الأولى
     showSection(sections.welcome);
 });
+
+// === كود تشغيل نافذة الاستعلام والإلغاء ===
+const searchModal = document.getElementById('search-modal');
+const openSearchModalBtn = document.getElementById('open-search-modal-btn');
+const closeSearchModalBtn = document.getElementById('close-search-modal-btn');
+const searchBtn = document.getElementById('search-booking-btn');
+const phoneInput = document.getElementById('search-phone');
+const resultsContainer = document.getElementById('search-results');
+
+// 1. فتح النافذة
+if (openSearchModalBtn) {
+    openSearchModalBtn.addEventListener('click', () => {
+        searchModal.classList.remove('hidden');
+    });
+}
+
+// 2. قفل النافذة (من علامة X أو بالضغط برة المربع)
+const closeModal = () => {
+    searchModal.classList.add('hidden');
+    phoneInput.value = ''; // تنظيف الحقل
+    resultsContainer.innerHTML = ''; // تنظيف النتائج
+};
+
+if (closeSearchModalBtn) {
+    closeSearchModalBtn.addEventListener('click', closeModal);
+}
+if (searchModal) {
+    searchModal.addEventListener('click', (e) => {
+        if (e.target === searchModal) closeModal();
+    });
+}
+
+// 3. البحث في فايربيز
+if (searchBtn) {
+    searchBtn.addEventListener('click', async () => {
+        const phone = phoneInput.value.trim();
+        
+        if (!phone) {
+            alert("برجاء إدخال رقم الموبايل للبحث");
+            return;
+        }
+
+        resultsContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">جاري البحث...</p>';
+
+        try {
+            const q = query(collection(db, "bookings"), where("customerPhone", "==", phone));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                resultsContainer.innerHTML = '<p class="text-sm text-red-500 text-center py-4 bg-red-50 rounded-lg">لا توجد حجوزات مسجلة بهذا الرقم</p>';
+                return;
+            }
+
+            let html = '';
+            querySnapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                const docId = docSnap.id; 
+                
+                html += `
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-row-reverse justify-between items-center">
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-800">الحلاق: ${data.barberName}</p>
+                            <p class="text-xs text-gray-600 mt-1">${data.bookingDate} | ${data.bookingTime}</p>
+                        </div>
+                        <button onclick="cancelBooking('${docId}')" class="bg-white text-red-500 border border-red-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-red-50 transition shadow-sm">
+                            إلغاء
+                        </button>
+                    </div>
+                `;
+            });
+            resultsContainer.innerHTML = html;
+
+        } catch (error) {
+            console.error("Error searching bookings:", error);
+            resultsContainer.innerHTML = '<p class="text-sm text-red-500 text-center">حدث خطأ أثناء البحث. حاول مرة أخرى.</p>';
+        }
+    });
+}
+
+// 4. دالة الإلغاء
+window.cancelBooking = async (docId) => {
+    if (confirm("هل أنت متأكد من إلغاء هذا الموعد؟")) {
+        try {
+            const docRef = doc(db, "bookings", docId);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                await deleteDoc(docRef);
+
+                // إرسال الإيميل عبر EmailJS
+                await emailjs.send("service_qvuxqfc", "template_yownb3c", {
+                    barber_name: data.barberName,
+                    customer_name: data.customerName,
+                    booking_date: data.bookingDate,
+                    booking_time: data.bookingTime,
+                    customer_phone: data.customerPhone
+                });
+
+                alert("تم إلغاء الحجز وإبلاغ الصالون بنجاح.");
+                location.reload();
+            }
+        } catch (error) {
+            alert("حدث خطأ أثناء الإلغاء");
+        }
+    }
+};

@@ -18,20 +18,38 @@
 </head>
 <body class="bg-gray-100 font-sans text-gray-800">
 
-    <main class="max-w-md mx-auto mt-0 bg-white p-6 rounded-lg shadow-lg">
+    <main class="max-w-md mx-auto mt-0 p-6 rounded-lg shadow-lg relative min-h-screen w-full">
+
+        <div class="fixed inset-0 z-[-1]">
+            <img src="https://images.unsplash.com/photo-1503951914875-452162b0f3f1?q=80&w=2070&auto=format&fit=crop" 
+                class="w-full h-full object-cover" 
+                alt="Background">
+            <div class="absolute inset-0 bg-black/70"></div>
+        </div>
         
         <!-- القسم الأول: شاشة الترحيب -->
-        <section id="welcome-section" class="flex flex-col items-center justify-start min-h-[95vh] animate-fade-in">
+        <section id="welcome-section" class="flex flex-col items-center justify-start min-h-[95vh] animate-fade-in relative z-10">
             <!-- مكان اللوجو -->
-            <div class="w-24 h-24 bg-gray-100 rounded-full mb-48 flex items-center justify-center text-gray-400 shadow-inner border border-gray-200">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            <div class="mb-24 flex items-center justify-center">
+                <h1 class="text-3xl font-extrabold text-white">Amr & Zain Salon</h1>
             </div>
-            <h1 class="text-3xl font-extrabold text-gray-900 mb-2">احجز موعدك</h1>
-            <p class="text-gray-500 mb-56 text-center">مع أفضل الحلاقين بخطوات بسيطة وسريعة</p>
+
+            <!-- زرار الاستعلام -->
+            <div class="mb-32 flex justify-center w-full px-4">
+                <button id="open-search-modal-btn" class="flex items-center gap-2 text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 cursor-pointer px-5 py-2.5 rounded-full transition-colors border border-gray-200 font-medium">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    </svg>
+                    استعلم عن حجزك
+                </button>
+            </div>
+
+            <h1 class="text-3xl font-extrabold text-white mb-2">احجز موعدك </h1>
+            <p class="text-gray-500 mb-32 text-center">اختارنا راحتك وتوفير وقتك لانك تهمنا</p>
             
             <!-- زرار البداية -->
-            <button id="start-booking-btn" class="w-full bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
-                ابدأ الحجز الآن
+            <button id="start-booking-btn" class="w-full bg-gray-500 text-white cursor-pointer font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
+                 احجز الآن
             </button>
         </section>
 
@@ -39,7 +57,7 @@
         <section id="barber-section" class="hidden min-h-[95vh] animate-fade-in">
             <!-- الهيدر وزرار الرجوع -->
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">اختر الحلاق</h2>
+                <h2 class="text-2xl font-bold text-white">اختر الحلاق</h2>
                 <button id="back-to-welcome" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
                     <!-- أيقونة سهم يمين عشان الموقع بالعربي -->
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -52,19 +70,19 @@
                 <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
                     <!-- استخدمنا روابط خارجية للصور مؤقتاً عشان نتجنب أي مشاكل في مسارات الملفات (File Paths) -->
                     <img src="https://ui-avatars.com/api/?name=Ahmed&background=0D8ABC&color=fff" alt="أحمد" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
-                    <h3 class="font-bold text-gray-900 text-lg">أحمد</h3>
+                    <h3 class="font-bold text-gray-900 text-lg">بعجر</h3>
                 </div>
 
                 <!-- كارت الحلاق الثاني -->
                 <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
                     <img src="https://ui-avatars.com/api/?name=Mohamed&background=1D4ED8&color=fff" alt="محمد" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
-                    <h3 class="font-bold text-gray-900 text-lg">محمد</h3>
+                    <h3 class="font-bold text-gray-900 text-lg">بالوظه</h3>
                 </div>
 
                 <!-- كارت الحلاق الثالث -->
                 <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-sm hover:shadow-md hover:border-black transition-all cursor-pointer flex flex-col items-center text-center group">
                     <img src="https://ui-avatars.com/api/?name=Mahmoud&background=1D4ED8&color=fff" alt="محمود" class="w-20 h-20 rounded-full mb-3 group-hover:scale-105 transition-transform">
-                    <h3 class="font-bold text-gray-900 text-lg">محمود</h3>
+                    <h3 class="font-bold text-gray-900 text-lg">فكري</h3>
                 </div>
             </div>
         </section>
@@ -73,26 +91,26 @@
         <section id="datetime-section" class="hidden min-h-[95vh] animate-fade-in">
             <!-- الهيدر وزرار الرجوع -->
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">الموعد المناسب</h2>
+                <h2 class="text-2xl font-bold text-white">الموعد المناسب</h2>
                 <button id="back-to-barbers" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             </div>
 
             <!-- اختيار اليوم -->
-            <h3 class="font-semibold text-gray-700 mb-3">اختر اليوم</h3>
+            <h3 class="font-semibold text-white mb-3">اختر اليوم</h3>
             <div id="days-container" class="flex gap-3 overflow-x-auto pb-2 mb-6 scrollbar-hide">
                 <!-- الزراير هتنزل هنا -->
             </div>
 
             <!-- اختيار الوقت -->
-            <h3 class="font-semibold text-gray-700 mb-3">اختر الوقت</h3>
+            <h3 class="font-semibold text-white mb-3">اختر الوقت</h3>
             <div id="times-container" class="grid grid-cols-3 gap-3">
                 <!-- الزراير هتنزل هنا -->
             </div>
             
             <!-- زرار المتابعة -->
-            <button id="continue-to-confirm" class="w-full mt-8 bg-black text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
+            <button id="continue-to-confirm" class="w-full mt-8 bg-gray-500 text-white font-bold py-4 rounded-xl hover:bg-gray-800 transition-all shadow-lg active:scale-95">
                 متابعة
             </button>
         </section>
@@ -101,7 +119,7 @@
         <section id="confirmation-section" class="hidden min-h-[95vh] animate-fade-in">
             <!-- الهيدر وزرار الرجوع -->
             <div class="flex justify-between items-center mb-8">
-                <h2 class="text-2xl font-bold text-gray-900">تأكيد الحجز</h2>
+                <h2 class="text-2xl font-bold text-white">تأكيد الحجز</h2>
                 <button id="back-to-datetime" class="p-2 text-gray-400 hover:text-black transition-colors rounded-full hover:bg-gray-100">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
@@ -116,13 +134,13 @@
             <!-- فورم إدخال البيانات -->
             <form id="booking-form" class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">الاسم بالكامل</label>
-                    <input type="text" id="user-name" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none transition-all" placeholder="أدخل اسمك">
+                    <label class="block text-sm font-medium text-white mb-1">الاسم بالكامل</label>
+                    <input type="text" id="user-name" required class="w-full px-4 py-3 text-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-white focus:border-white outline-none transition-all" placeholder="أدخل اسمك">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">رقم الموبايل</label>
+                    <label class="block text-sm font-medium text-white mb-1">رقم الموبايل</label>
                     <!-- خلينا اتجاه الرقم ltr عشان الأرقام تتكتب بشكل سليم -->
-                    <input type="tel" id="user-phone" required class="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none transition-all text-left" dir="ltr" placeholder="01X XXXX XXXX">
+                    <input type="tel" id="user-phone" required class="w-full px-4 py-3 text-white rounded-xl border border-gray-300 focus:ring-2 focus:ring-white focus:border-white outline-none transition-all text-left" dir="ltr" placeholder="01X XXXX XXXX">
                 </div>
                 
                 <button type="submit" id="confirm-booking-btn" class="w-full mt-6 bg-green-600 text-white font-bold py-4 rounded-xl hover:bg-green-700 transition-all shadow-lg active:scale-95 flex justify-center items-center">
@@ -138,7 +156,7 @@
                 <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             </div>
             
-            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">تم تأكيد حجزك!</h2>
+            <h2 class="text-3xl font-extrabold text-white mb-2">تم تأكيد حجزك!</h2>
             <p class="text-gray-500 mb-8">في انتظارك في الموعد، شكراً لاختيارك صالوننا.</p>
 
             <!-- ملخص الحجز النهائي -->
@@ -150,7 +168,7 @@
             </div>
 
             <!-- زرار العودة للرئيسية (بدون سهم رجوع) -->
-            <button id="return-home-btn" class="w-full border-2 border-black text-black font-bold py-4 rounded-xl hover:bg-black hover:text-white transition-all active:scale-95">
+            <button id="return-home-btn" class="w-full border-2 border-white text-white font-bold py-4 rounded-xl hover:bg-gray-800 hover:text-white transition-all active:scale-95">
                 إنهاء والعودة للرئيسية
             </button>
         </section>
@@ -163,6 +181,26 @@
             </p>
         </footer>
     </main>
+
+    <!-- نافذة الاستعلام -->
+     <div id="search-modal" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center backdrop-blur-sm px-4">
+            <div class="bg-white rounded-3xl w-full max-w-md p-6 relative shadow-2xl transition-all">
+                <button id="close-search-modal-btn" class="absolute top-5 left-5 text-gray-400 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                
+                <h3 class="text-xl font-bold text-gray-800 mb-6 text-center mt-2">استعلام وإلغاء الحجز</h3>
+                
+                <div class="flex flex-row-reverse gap-2 mb-4">
+                    <button id="search-booking-btn" class="bg-black text-white px-5 py-2.5 rounded-xl font-medium hover:bg-gray-800 cursor-pointer transition shadow-sm">بحث</button>
+                    <input type="tel" id="search-phone" placeholder="أدخل رقم الموبايل" class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-right focus:outline-none focus:border-black focus:ring-1 focus:ring-black text-gray-700">
+                </div>
+
+                <div id="search-results" class="space-y-3 max-h-60 overflow-y-auto"></div>
+            </div>
+        </div>
     
     <script type="module" src="app.js"></script>
 </body>
