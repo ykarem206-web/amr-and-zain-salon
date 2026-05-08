@@ -35,6 +35,25 @@ const sections = {
     success: document.getElementById('success-section')
 };
 
+
+const checkPhoneInput = document.getElementById('user-phone');
+
+// فلتر الأرقام: بيمنع الحروف والأرقام العربي في نفس اللحظة
+if (checkPhoneInput) {
+    checkPhoneInput.addEventListener('input', function(e) {
+        // بيمسح أي حاجة مش أرقام إنجليزية (0-9)
+        let cleanedValue = this.value.replace(/[^0-9]/g, '');
+        
+        // لو الرقم زاد عن 11 بيقصه
+        if (cleanedValue.length > 11) {
+            cleanedValue = cleanedValue.substring(0, 11);
+        }
+        
+        // بيرجع القيمة النظيفة للخانة
+        this.value = cleanedValue;
+    });
+}
+
 // 3. دالة التنقل بين الشاشات (Navigation Function)
 // الدالة دي بتاخد الشاشة اللي عايزين نظهرها، وتخفي الباقي
 const showSection = (sectionToShow) => {
@@ -129,6 +148,12 @@ const confirmBtn = document.getElementById('confirm-booking-btn');
 
 bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
+
+    // كمين التحقق من رقم الموبايل
+    if (document.getElementById('user-phone').value.length !== 11) {
+        alert("عذراً، يجب إدخال رقم موبايل صحيح مكون من 11 رقم!");
+        return; // الفرملة اللي بتوقف الكود
+    }
 
     bookingState.userName = document.getElementById('user-name').value;
     bookingState.userPhone = document.getElementById('user-phone').value;
