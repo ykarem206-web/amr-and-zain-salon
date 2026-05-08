@@ -71,6 +71,30 @@ barberCards.forEach(card => {
         
         // ننقله للشاشة اللي بعدها
         showSection(sections.datetime);
+
+        // 1. تصفير الـ State عشان ننسى أي حاجة العميل اختارها قبل كده
+        bookingState.date = null;
+        bookingState.time = null;
+
+        // 2. إزالة التحديد من على كل زراير الأيام
+        dateButtons.forEach(btn => {
+            btn.classList.remove('bg-black', 'text-white', 'border-white');
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+        });
+
+        // 3. تنظيف كل زراير الأوقات وإرجاعها لحالتها الأصلية المتاحة
+        timeButtons.forEach(btn => {
+            btn.disabled = false;
+            
+            // شيل كلاسات الحجز واللون الأحمر والأسود
+            btn.classList.remove('bg-red-50', 'text-red-400', 'bg-gray-100', 'text-gray-300', 'cursor-not-allowed', 'opacity-50', 'bg-black', 'text-white', 'border-white', 'border-red-100');
+            
+            // رجع كلاسات الزرار الطبيعي
+            btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200', 'hover:border-black');
+            
+            // شيل كلمة (محجوز) لو كانت مكتوبة
+            btn.innerText = btn.innerText.replace('(محجوز)', '').trim();
+        });
     });
 });
 
