@@ -190,19 +190,36 @@ bookingForm.addEventListener('submit', async (e) => {
         
         console.log("تم حفظ الحجز بنجاح في قاعدة البيانات!");
 
-        // 2. تجهيز المتغيرات لإرسال الإيميل (لازم الأسماء تكون مطابقة للي في Template بالظبط)
-        const templateParams = {
-            customer_name: bookingState.userName,
-            customer_phone: bookingState.userPhone,
-            barber_name: bookingState.barber,
-            booking_date: bookingState.date,
-            booking_time: bookingState.time
-        };
+        // --- بداية كود Web3Forms 
+        try {
+            const emailResponse = await fetch("https://api.web3forms.com/submit", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({
+                    access_key: "566c6deb-d5ca-49c6-aee7-beb9b0e23597",
+                    subject: `حجز جديد 💈: ${bookingState.userName} عند ${bookingState.barber}`,
+                    from_name: "سيستم حجز صالون عمرو وزين",
+                    "اسم العميل": bookingState.userName,
+                    "رقم الموبايل": bookingState.userPhone,
+                    "الحلاق": bookingState.barber,
+                    "تاريخ الحجز": bookingState.date,
+                    "الساعة": bookingState.time
+                }),
+            });
 
-        // 3. أمر إرسال الإيميل عن طريق EmailJS
-        // بنحط الـ Service ID ثم الـ Template ID ثم المتغيرات
-        await emailjs.send("service_qvuxqfc", "template_1jixepe", templateParams);
-        console.log("تم إرسال إشعار الإيميل بنجاح!");
+            const emailResult = await emailResponse.json();
+            if (emailResult.success) {
+                console.log("تم إرسال الإشعارات بنجاح عبر Web3Forms");
+            } else {
+                console.error("مشكلة في إرسال الإيميل:", emailResult);
+            }
+        } catch (error) {
+             console.error("خطأ في الاتصال بـ Web3Forms:", error);
+        }
+        // --- نهاية كود Web3Forms ---
 
         // 4. طباعة البيانات في شاشة النجاح
         document.getElementById('final-name').innerText = bookingState.userName;
@@ -508,14 +525,37 @@ window.cancelBooking = async (docId) => {
                 const data = docSnap.data();
                 await deleteDoc(docRef);
 
-                // إرسال الإيميل عبر EmailJS
-                await emailjs.send("service_qvuxqfc", "template_yownb3c", {
-                    barber_name: data.barberName,
-                    customer_name: data.customerName,
-                    booking_date: data.bookingDate,
-                    booking_time: data.bookingTime,
-                    customer_phone: data.customerPhone
-                });
+                // --- بداية كود Web3Forms للإلغاء ---
+                try {
+                    const cancelEmailResponse = await fetch("https://api.web3forms.com/submit", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Accept: "application/json",
+                        },
+                        body: JSON.stringify({
+                            access_key: "566c6deb-d5ca-49c6-aee7-beb9b0e23597",
+                            subject: `إلغاء حجز ❌: ${data.customerName} عند ${data.barberName}`,
+                            from_name: "سيستم حجز صالون عمرو وزين",
+                            "نوع العملية": "إلغاء حجز ❌",
+                            "اسم العميل": data.customerName,
+                            "رقم الموبايل": data.customerPhone,
+                            "الحلاق": data.barberName,
+                            "تاريخ الحجز الملغي": data.bookingDate,
+                            "الساعة الملغية": data.bookingTime
+                        }),
+                    });
+
+                    const cancelEmailResult = await cancelEmailResponse.json();
+                    if (cancelEmailResult.success) {
+                        console.log("تم إرسال إشعار الإلغاء بنجاح عبر Web3Forms");
+                    } else {
+                        console.error("مشكلة في إرسال إيميل الإلغاء:", cancelEmailResult);
+                    }
+                } catch (emailError) {
+                    console.error("خطأ في الاتصال بـ Web3Forms:", emailError);
+                }
+                // --- نهاية كود Web3Forms للإلغاء ---
 
                 alert("تم إلغاء الحجز وإبلاغ الصالون بنجاح.");
                 location.reload();
