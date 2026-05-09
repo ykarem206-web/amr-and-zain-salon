@@ -1,19 +1,6 @@
-// --- إعدادات Firebase وقاعدة البيانات ---
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
-const firebaseConfig = {
-  apiKey: "AIzaSyA1A_MxTa6ZRa-Dp3Dt0Fw87w7fASO4PoU",
-  authDomain: "amr-and-zain.firebaseapp.com",
-  projectId: "amr-and-zain",
-  storageBucket: "amr-and-zain.firebasestorage.app",
-  messagingSenderId: "967997333804",
-  appId: "1:967997333804:web:2b7c731f8c32c794cb8c89"
-};
+import { db } from "./firebase-config.js";
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
-// تشغيل Firebase
-const app = initializeApp(firebaseConfig);
-// تشغيل قاعدة البيانات (Firestore)
-const db = getFirestore(app);
 // ----------------------------------------
 
 // 1. تخزين بيانات الحجز (State Management)
