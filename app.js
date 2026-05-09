@@ -155,6 +155,20 @@ bookingForm.addEventListener('submit', async (e) => {
         return; // الفرملة اللي بتوقف الكود
     }
 
+    //  كمين منع تكرار الحجز
+    try {
+        const userPhoneValue = document.getElementById('user-phone').value;
+        const checkQuery = query(collection(db, "bookings"), where("customerPhone", "==", userPhoneValue));
+        const checkSnapshot = await getDocs(checkQuery);
+
+        if (!checkSnapshot.empty) {
+            alert("عذراً! هذا الرقم لديه حجز قادم بالفعل. لا يمكنك حجز موعد جديد حتى تنتهي من موعدك الحالي أو تقوم بإلغائه.");
+            return; 
+        }
+    } catch (error) {
+        console.error("خطأ في التحقق من الحجوزات السابقة:", error);
+    }
+
     bookingState.userName = document.getElementById('user-name').value;
     bookingState.userPhone = document.getElementById('user-phone').value;
 
@@ -511,3 +525,52 @@ window.cancelBooking = async (docId) => {
         }
     }
 };
+
+// دالة التنظيف التلقائي للمواعيد القديمة
+async function cleanupOldBookings() {
+    try {
+        // 1. قاموس الشهور عشان الجافا سكريبت تفهم العربي
+        const arabicMonths = {
+            "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5,
+            "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
+        };
+
+        const q = query(collection(db, "bookings"));
+        const querySnapshot = await getDocs(q);
+        
+        // تاريخ النهارده بالضبط (ونصفر الساعات عشان نقارن بالأيام بس)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        querySnapshot.forEach(async (document) => {
+            const data = document.data();
+            const bookingDateStr = data.bookingDate; // ده التاريخ المتخزن عندك (مثال: الخميس 7 مايو)
+            
+            if (bookingDateStr) {
+                // بنفصل النص عشان نطلع الرقم والشهر
+                const parts = bookingDateStr.split(" "); 
+                if (parts.length >= 3) {
+                    const day = parseInt(parts[1]); // رقم اليوم (مثال: 7)
+                    const monthName = parts[2]; // اسم الشهر (مثال: مايو)
+                    const month = arabicMonths[monthName];
+
+                    if (month !== undefined && !isNaN(day)) {
+                        const currentYear = new Date().getFullYear();
+                        const bookingDate = new Date(currentYear, month, day);
+                        
+                        // 2. المقارنة الحاسمة: لو تاريخ الحجز أقدم من النهارده، امسحه!
+                        if (bookingDate < today) {
+                            await deleteDoc(doc(db, "bookings", document.id));
+                            console.log(`تم مسح حجز قديم بتاريخ: ${bookingDateStr}`);
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("خطأ في تنظيف الحجوزات القديمة:", error);
+    }
+}
+
+// تشغيل دالة التنظيف التلقائي عند فتح الموقع
+cleanupOldBookings();
