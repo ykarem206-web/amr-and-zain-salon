@@ -73,7 +73,7 @@ barberCards.forEach(card => {
         // هنجيب اسم الحلاق من تاج h3 جوه الكارت
         const barberName = card.querySelector('h3').innerText;
         bookingState.barber = barberName; // نحفظ الاسم في الـ State
-        console.log('تم اختيار الحلاق:', bookingState.barber); // للـ Debugging
+        console.log('تم اختيار الحلاق:', bookingState.barber); 
         
         // ننقله للشاشة اللي بعدها
         showSection(sections.datetime);
@@ -390,8 +390,6 @@ const checkAvailableTimes = async () => {
         timeButtons.forEach(btn => {
             // تنظيف وقت الزرار عشان المقارنة تنجح 
             const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
-
-            console.log(`مقارنة: الزرار [${cleanBtnTime}] | الداتابيز:`, cleanBookedTimes);
 
             if (cleanBookedTimes.includes(cleanBtnTime)) {
                 // لو محجوز: اقفل الزرار ولونه أحمر
