@@ -117,3 +117,58 @@ window.deleteBooking = async (id) => {
         }
     }
 }
+
+// --- نظام إدارة الأيام المغلقة ---
+const blockDateInput = document.getElementById('block-date-input');
+const blockDateBtn = document.getElementById('block-date-btn');
+const blockedDatesList = document.getElementById('blocked-dates-list');
+const blockBarberInput = document.getElementById('block-barber-input');
+
+// 1. إضافة يوم مغلق لقاعدة البيانات
+blockDateBtn.addEventListener('click', async () => {
+    const dateToBlock = blockDateInput.value;
+    if (!dateToBlock) {
+        alert("برجاء اختيار تاريخ أولاً!");
+        return;
+    }
+    try {
+        blockDateBtn.innerText = "جاري الإغلاق...";
+        await addDoc(collection(db, "closedDates"), {
+            date: dateToBlock,
+            barber: blockBarberInput.value
+        });
+        blockDateInput.value = "";
+        blockDateBtn.innerText = "تأكيد إغلاق اليوم";
+    } catch (error) {
+        console.error(error);
+        alert("حدث خطأ أثناء إغلاق اليوم.");
+    }
+});
+
+// 2. جلب وعرض الأيام المغلقة في الداش بورد لايف
+onSnapshot(collection(db, "closedDates"), (snapshot) => {
+    blockedDatesList.innerHTML = ""; // تفريغ القائمة
+    if (snapshot.empty) {
+        blockedDatesList.innerHTML = '<span class="text-gray-500">لا توجد أيام مغلقة حالياً.</span>';
+        return;
+    }
+    snapshot.forEach((docSnap) => {
+        const closedDate = docSnap.data().date;
+        const closedBarber = docSnap.data().barber || "الكل";
+        const docId = docSnap.id;
+        
+        blockedDatesList.innerHTML += `
+            <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full flex items-center gap-2 border border-red-200">
+                <span class="font-bold text-sm" dir="ltr">${closedDate} <span class="text-red-500">(${closedBarber})</span></span>
+                <button onclick="unblockDate('${docId}')" class="text-red-500 hover:text-red-800 font-bold text-lg leading-none">&times;</button>
+            </div>
+        `;
+    });
+});
+
+// 3. دالة فتح اليوم (حذف من قاعدة البيانات) - ضيفها كـ Window Function عشان الـ onclick يشوفها
+window.unblockDate = async (id) => {
+    if(confirm("هل أنت متأكد من فتح هذا اليوم للحجوزات مرة أخرى؟")) {
+        await deleteDoc(doc(db, "closedDates", id));
+    }
+};

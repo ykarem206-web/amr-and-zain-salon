@@ -142,13 +142,13 @@ bookingForm.addEventListener('submit', async (e) => {
 
     if (lastBookingDate === today) {
         alert("لقد قمت بتسجيل حجز بالفعل من هذا الجهاز اليوم! برجاء المحاولة في يوم آخر.");
-        return; // بيوقف عملية الحجز فوراً
+        return;
     }
 
     // كمين التحقق من رقم الموبايل
     if (document.getElementById('user-phone').value.length !== 11) {
         alert("عذراً، يجب إدخال رقم موبايل صحيح مكون من 11 رقم!");
-        return; // الفرملة اللي بتوقف الكود
+        return;
     }
 
     //  كمين منع تكرار الحجز
@@ -309,6 +309,55 @@ const checkAvailableTimes = async () => {
             });
             bookingState.time = null;
             return; // توقف هنا وماتسألش فايربيز لأن اليوم كله إجازة
+        }
+    }
+
+    // --- كمين الأيام المغلقة استثنائياً من الداش بورد ---
+    if (bookingState.date) {
+        try {
+            // هنجيب كل الأيام المقفولة من فايربيز
+            const closedSnapshot = await getDocs(collection(db, "closedDates"));
+            let isDayClosed = false;
+
+            // قواميس الترجمة للعربي
+            const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+            closedSnapshot.forEach((docSnap) => {
+                // التاريخ اللي متسجل في الداش بورد (مثال: "2026-05-14")
+                const dbDate = docSnap.data().date; 
+                
+                // نفصصه عشان نظبطه على التوقيت المحلي بدون لغبطة
+                const [year, month, day] = dbDate.split('-');
+                const d = new Date(year, month - 1, day);
+                
+                // نجمعه تاني ونترجمه لنفس شكل الموقع بالظبط
+                const formattedDbDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
+                
+                // نقارنه باليوم اللي الزبون داس عليه
+                if (formattedDbDate === bookingState.date) {
+                    const blockedBarber = docSnap.data().barber || "الكل";
+                    
+                    if (blockedBarber === "الكل" || blockedBarber === bookingState.barber) {
+                        isDayClosed = true;
+                    }
+                }
+            });
+
+            // لو طلع متطابق مع يوم مقفول، نقفل الزراير
+            if (isDayClosed) {
+                timeButtons.forEach(timeBtn => {
+                    timeBtn.disabled = true;
+                    timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black');
+                    timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
+                });
+                bookingState.time = null;
+                
+                alert("عفواً، هذا الحلاق غير متاح اليوم لظروف خاصة. برجاء اختيار يوم آخر أو حلاق آخر.");
+                return; // الفرملة
+            }
+        } catch (error) {
+            console.error("خطأ في التحقق من الأيام المغلقة:", error);
         }
     }
 
