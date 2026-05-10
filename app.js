@@ -129,12 +129,21 @@ document.getElementById('back-to-datetime').addEventListener('click', () => {
     showSection(sections.datetime);
 });
 
-// 6. التعامل مع فورم التأكيد النهائي وإرسال البيانات لـ Firebase و EmailJS
+// 6. التعامل مع فورم التأكيد النهائي وإرسال البيانات لـ Firebase و Email
 const bookingForm = document.getElementById('booking-form');
 const confirmBtn = document.getElementById('confirm-booking-btn');
 
 bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
+
+    // كمين بصمة المتصفح (لمنع الحجز المتكرر بأرقام مختلفة)
+    const lastBookingDate = localStorage.getItem("salon_booked_date");
+    const today = new Date().toDateString();
+
+    if (lastBookingDate === today) {
+        alert("لقد قمت بتسجيل حجز بالفعل من هذا الجهاز اليوم! برجاء المحاولة في يوم آخر.");
+        return; // بيوقف عملية الحجز فوراً
+    }
 
     // كمين التحقق من رقم الموبايل
     if (document.getElementById('user-phone').value.length !== 11) {
@@ -176,6 +185,9 @@ bookingForm.addEventListener('submit', async (e) => {
         });
         
         console.log("تم حفظ الحجز بنجاح في قاعدة البيانات!");
+
+        // تسجيل بصمة بتاريخ اليوم في متصفح العميل
+        localStorage.setItem("salon_booked_date", new Date().toDateString());
 
         // --- بداية كود Web3Forms 
         try {
