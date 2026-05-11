@@ -2,18 +2,16 @@ import { db, auth } from "./firebase-config.js";
 import { collection, addDoc, getDocs, onSnapshot, query, where, orderBy, deleteDoc, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
 
-// 0. حماية الصفحة 
+// Route Protection: Ensure only authenticated users can access the dashboard
 onAuthStateChanged(auth, (user) => {
     if (!user) {
-        // لو مفيش مستخدم مسجل، اطرده على صفحة اللوجين
         window.location.href = "login.html"; 
     } else {
-        // لو مسجل دخول، شغل دالة جلب البيانات
         fetchBookings();
     }
 });
 
-// تفعيل زرار تسجيل الخروج
+// Handle user logout
 document.getElementById('logout-btn').addEventListener('click', () => {
     signOut(auth).then(() => {
         window.location.href = "login.html";
@@ -24,9 +22,9 @@ const tableBody = document.getElementById('bookings-table-body');
 const totalCount = document.getElementById('total-bookings');
 
 let allBookingsData = []; 
-let currentFilter = "أبو عمرو"; // ده الفلتر الافتراضي أول ما اللوحة تفتح
+let currentFilter = "أبو عمرو"; 
 
-// 1. دالة جلب البيانات من فايربيز
+// Fetch real-time booking data from Firestore
 function fetchBookings() {
     const q = query(collection(db, "bookings"));
 
@@ -41,23 +39,23 @@ function fetchBookings() {
     });
 }
 
-// 2. دالة الفلترة والترتيب والرسم في الجدول
+// Render, filter, and sort bookings in the dashboard table
 function renderBookings() {
     tableBody.innerHTML = '';
     
-    // الفلترة الإجبارية (هتفلتر دايماً على الحلاق اللي متحدد)
+    // Apply active barber filter
     let filteredBookings = allBookingsData.filter(booking => booking.barberName === currentFilter);
 
-    // تحديث العداد
+    // Update total bookings counter
     totalCount.innerText = filteredBookings.length;
 
-    // قاموس الشهور لترتيب التاريخ
+    // Arabic months dictionary for chronological sorting
     const arabicMonths = {
         "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5,
         "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
     };
 
-    // الترتيب (من الأقرب للأبعد)
+    // Sort bookings chronologically (closest date first)
     filteredBookings.sort((a, b) => {
         const currentYear = new Date().getFullYear();
         let timeA = 0, timeB = 0;
@@ -75,7 +73,7 @@ function renderBookings() {
         return timeA - timeB;
     });
 
-    // الطباعة في الجدول
+    // Render filtered bookings to the DOM
     filteredBookings.forEach((data) => {
         const row = `
             <tr class="flex flex-col md:table-row border-b p-4 md:p-0 hover:bg-gray-50 transition">
@@ -92,22 +90,22 @@ function renderBookings() {
     });
 }
 
-// 3. دالة تفعيل الزراير وتغيير الألوان
+// Handle filter button state and styling
 window.setFilter = (barberName) => {
     currentFilter = barberName;
     
     const activeClass = "bg-gray-800 text-white px-4 py-1.5 rounded-md text-sm transition font-bold shadow";
     const inactiveClass = "bg-white text-gray-700 border border-gray-300 px-4 py-1.5 rounded-md text-sm hover:bg-gray-100 transition shadow-sm";
 
-    // تلوين الزرار المتداس عليه بس
+    // Toggle active class for selected barber
     document.getElementById('btn-abo-amr').className = barberName === 'أبو عمرو' ? activeClass : inactiveClass;
     document.getElementById('btn-yousef').className = barberName === 'يوسف' ? activeClass : inactiveClass;
     document.getElementById('btn-fekry').className = barberName === 'فكري' ? activeClass : inactiveClass;
 
-    renderBookings(); // تحديث الجدول
+    renderBookings(); 
 };
 
-// 4. دالة المسح (عشان زرار تمت الحلاقة يشتغل)
+// Mark booking as completed (Deletes record from Firestore)
 window.deleteBooking = async (id) => {
     if(confirm("هل أنت متأكد من مسح هذا الحجز؟")) {
         try {
@@ -118,13 +116,13 @@ window.deleteBooking = async (id) => {
     }
 }
 
-// --- نظام إدارة الأيام المغلقة ---
+// --- Day-Off Management System ---
 const blockDateInput = document.getElementById('block-date-input');
 const blockDateBtn = document.getElementById('block-date-btn');
 const blockedDatesList = document.getElementById('blocked-dates-list');
 const blockBarberInput = document.getElementById('block-barber-input');
 
-// 1. إضافة يوم مغلق لقاعدة البيانات
+// Add a new closed date/day-off to Firestore
 blockDateBtn.addEventListener('click', async () => {
     const dateToBlock = blockDateInput.value;
     if (!dateToBlock) {
@@ -145,9 +143,9 @@ blockDateBtn.addEventListener('click', async () => {
     }
 });
 
-// 2. جلب وعرض الأيام المغلقة في الداش بورد لايف
+// Real-time listener for closed dates to update the UI
 onSnapshot(collection(db, "closedDates"), (snapshot) => {
-    blockedDatesList.innerHTML = ""; // تفريغ القائمة
+    blockedDatesList.innerHTML = ""; 
     if (snapshot.empty) {
         blockedDatesList.innerHTML = '<span class="text-gray-500">لا توجد أيام مغلقة حالياً.</span>';
         return;
@@ -166,7 +164,7 @@ onSnapshot(collection(db, "closedDates"), (snapshot) => {
     });
 });
 
-// 3. دالة فتح اليوم (حذف من قاعدة البيانات) - ضيفها كـ Window Function عشان الـ onclick يشوفها
+// Remove a day-off restriction (Exposed globally for inline onclick)
 window.unblockDate = async (id) => {
     if(confirm("هل أنت متأكد من فتح هذا اليوم للحجوزات مرة أخرى؟")) {
         await deleteDoc(doc(db, "closedDates", id));

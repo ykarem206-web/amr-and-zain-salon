@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* إخفاء السكرول بار */
+
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }

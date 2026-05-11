@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/1
 const loginBtn = document.getElementById('login-btn');
 const errorMsg = document.getElementById('error-msg');
 
+// Handle Admin Login Authorization
 loginBtn.addEventListener('click', async () => {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
@@ -16,9 +17,9 @@ loginBtn.addEventListener('click', async () => {
 
     try {
         loginBtn.innerText = "جاري الدخول...";
-        // محاولة تسجيل الدخول
+        // Authenticate admin user via Firebase Auth
         await signInWithEmailAndPassword(auth, email, password);
-        // لو نجح، وديه على الداش بورد
+        // Redirect to protected admin dashboard upon successful authentication
         window.location.href = "admin.html";
     } catch (error) {
         console.error(error);

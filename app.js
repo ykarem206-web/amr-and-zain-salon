@@ -3,8 +3,7 @@ import { collection, addDoc, getDocs, query, where, deleteDoc, doc, getDoc } fro
 
 // ----------------------------------------
 
-// 1. تخزين بيانات الحجز (State Management)
-// بنستخدم كائن (Object) عشان نحفظ اختيارات العميل خطوة بخطوة
+// State Management: Store booking progression
 const bookingState = {
     barber: null,
     date: null,
@@ -13,7 +12,7 @@ const bookingState = {
     userPhone: ''
 };
 
-// 2. تحديد الشاشات (DOM Elements)
+// DOM Elements
 const sections = {
     welcome: document.getElementById('welcome-section'),
     barbers: document.getElementById('barber-section'),
@@ -22,121 +21,103 @@ const sections = {
     success: document.getElementById('success-section')
 };
 
-
 const checkPhoneInput = document.getElementById('user-phone');
 
-// فلتر الأرقام: بيمنع الحروف والأرقام العربي في نفس اللحظة
+// Input validation: Restrict phone number to 11 English digits
 if (checkPhoneInput) {
     checkPhoneInput.addEventListener('input', function(e) {
-        // بيمسح أي حاجة مش أرقام إنجليزية (0-9)
         let cleanedValue = this.value.replace(/[^0-9]/g, '');
         
-        // لو الرقم زاد عن 11 بيقصه
         if (cleanedValue.length > 11) {
             cleanedValue = cleanedValue.substring(0, 11);
         }
         
-        // بيرجع القيمة النظيفة للخانة
         this.value = cleanedValue;
     });
 }
 
-// 3. دالة التنقل بين الشاشات (Navigation Function)
-// الدالة دي بتاخد الشاشة اللي عايزين نظهرها، وتخفي الباقي
+// Navigation Function: Handle UI section transitions
 const showSection = (sectionToShow) => {
-    // بنلف على كل الشاشات ونخفيها باستخدام Object.values (ES6 Feature)
     Object.values(sections).forEach(section => {
         section.classList.add('hidden');
     });
-    // نظهر الشاشة المطلوبة
     sectionToShow.classList.remove('hidden');
 };
 
-// 4. تشغيل أزرار "التالي" و "رجوع" (Event Listeners)
+// Navigation Event Listeners
 
-// من الترحيب لاختيار الحلاق
 document.getElementById('start-booking-btn').addEventListener('click', () => {
     showSection(sections.barbers);
 });
 
-// رجوع من الحلاقين للترحيب
 document.getElementById('back-to-welcome').addEventListener('click', () => {
     showSection(sections.welcome);
 });
 
-// 5. اختيار الحلاق والانتقال لشاشة المواعيد
-// هنحدد كل كروت الحلاقين (أي عنصر واخد كلاس group في شاشة الحلاقين)
+// Barber Selection Handler
 const barberCards = document.querySelectorAll('#barber-section .group');
 
 barberCards.forEach(card => {
     card.addEventListener('click', (e) => {
-        // هنجيب اسم الحلاق من تاج h3 جوه الكارت
         const barberName = card.querySelector('h3').innerText;
-        bookingState.barber = barberName; // نحفظ الاسم في الـ State
+        bookingState.barber = barberName; 
         console.log('تم اختيار الحلاق:', bookingState.barber); 
         
-        // ننقله للشاشة اللي بعدها
         showSection(sections.datetime);
 
-        // 1. تصفير الـ State عشان ننسى أي حاجة العميل اختارها قبل كده
+        // Reset date/time state for new barber selection
         bookingState.date = null;
         bookingState.time = null;
 
-        // 2. إزالة التحديد من على كل زراير الأيام
+        // Reset UI for date buttons
         dateButtons.forEach(btn => {
             btn.classList.remove('bg-black', 'text-white', 'border-white');
             btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
         });
 
-        // 3. تنظيف كل زراير الأوقات وإرجاعها لحالتها الأصلية المتاحة
+        // Reset UI for time buttons
         timeButtons.forEach(btn => {
             btn.disabled = false;
             
-            // شيل كلاسات الحجز واللون الأحمر والأسود
             btn.classList.remove('bg-red-50', 'text-red-400', 'bg-gray-100', 'text-gray-300', 'cursor-not-allowed', 'opacity-50', 'bg-black', 'text-white', 'border-white', 'border-red-100');
             
-            // رجع كلاسات الزرار الطبيعي
             btn.classList.add('bg-white', 'text-gray-700', 'border-gray-200', 'hover:border-black');
             
-            // شيل كلمة (محجوز) لو كانت مكتوبة
             btn.innerText = btn.innerText.replace('(محجوز)', '').trim();
         });
     });
 });
 
-// رجوع من المواعيد للحلاقين
 document.getElementById('back-to-barbers').addEventListener('click', () => {
     showSection(sections.barbers);
 });
 
-// من المواعيد لتأكيد الحجز وتحديث الملخص
+// Validate booking state before proceeding to confirmation
 document.getElementById('continue-to-confirm').addEventListener('click', () => {
-    // التأكد إن العميل اختار حلاق ويوم ووقت قبل ما يكمل
     if(!bookingState.barber || !bookingState.date || !bookingState.time) {
         alert('برجاء اختيار الحلاق واليوم والوقت أولاً');
-        return; // توقف الدالة هنا وماتكملش
+        return; 
     }
 
-    // تحديث الملخص في الشاشة
+    // Update confirmation UI
     document.getElementById('summary-barber').innerText = bookingState.barber;
     document.getElementById('summary-datetime').innerText = `${bookingState.date}، الساعة ${bookingState.time}`;
     
     showSection(sections.confirmation);
 });
 
-// رجوع من تأكيد الحجز للمواعيد
 document.getElementById('back-to-datetime').addEventListener('click', () => {
     showSection(sections.datetime);
 });
 
-// 6. التعامل مع فورم التأكيد النهائي وإرسال البيانات لـ Firebase و Email
+// Form Submission: Handle booking creation and notifications
 const bookingForm = document.getElementById('booking-form');
 const confirmBtn = document.getElementById('confirm-booking-btn');
 
 bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
 
-    // كمين بصمة المتصفح (لمنع الحجز المتكرر بأرقام مختلفة)
+    // Rate limiting: Prevent multiple bookings from the same device in a single day
     const lastBookingDate = localStorage.getItem("salon_booked_date");
     const today = new Date().toDateString();
 
@@ -145,13 +126,13 @@ bookingForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    // كمين التحقق من رقم الموبايل
+    // Validate phone number length
     if (document.getElementById('user-phone').value.length !== 11) {
         alert("عذراً، يجب إدخال رقم موبايل صحيح مكون من 11 رقم!");
         return;
     }
 
-    //  كمين منع تكرار الحجز
+    // Prevent duplicate active bookings for the same phone number
     try {
         const userPhoneValue = document.getElementById('user-phone').value;
         const checkQuery = query(collection(db, "bookings"), where("customerPhone", "==", userPhoneValue));
@@ -174,7 +155,7 @@ bookingForm.addEventListener('submit', async (e) => {
     confirmBtn.classList.add('opacity-70', 'cursor-not-allowed');
 
     try {
-        // 1. إرسال البيانات لقاعدة البيانات (Firestore)
+        // Save booking to Firestore
         const docRef = await addDoc(collection(db, "bookings"), {
             barberName: bookingState.barber,
             bookingDate: bookingState.date,
@@ -186,10 +167,10 @@ bookingForm.addEventListener('submit', async (e) => {
         
         console.log("تم حفظ الحجز بنجاح في قاعدة البيانات!");
 
-        // تسجيل بصمة بتاريخ اليوم في متصفح العميل
+        // Store local fingerprint for rate limiting
         localStorage.setItem("salon_booked_date", new Date().toDateString());
 
-        // --- بداية كود Web3Forms 
+        // Send email notification via Web3Forms API
         try {
             const emailResponse = await fetch("https://api.web3forms.com/submit", {
                 method: "POST",
@@ -218,15 +199,14 @@ bookingForm.addEventListener('submit', async (e) => {
         } catch (error) {
              console.error("خطأ في الاتصال بـ Web3Forms:", error);
         }
-        // --- نهاية كود Web3Forms ---
 
-        // 4. طباعة البيانات في شاشة النجاح
+        // Populate success screen data
         document.getElementById('final-name').innerText = bookingState.userName;
         document.getElementById('final-phone').innerText = bookingState.userPhone;
         document.getElementById('final-barber').innerText = bookingState.barber;
         document.getElementById('final-datetime').innerText = `${bookingState.date}، الساعة ${bookingState.time}`;
 
-        // 5. عرض شاشة النجاح
+        // Display success section
         showSection(sections.success);
         
     } catch (error) {
@@ -238,22 +218,21 @@ bookingForm.addEventListener('submit', async (e) => {
         confirmBtn.classList.remove('opacity-70', 'cursor-not-allowed');
     }
 });
-// 7. توليد الأيام تلقائياً (مثلاً لمدة 14 يوم قدام)
+
+// Dynamic Calendar: Generate next 14 days
 const daysContainer = document.getElementById('days-container');
 const daysOfWeek = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 const monthsOfYear = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 let daysHTML = '';
 
-// هنعمل لوب يلف 14 مرة عشان يطبع 14 يوم
 for (let i = 0; i < 14; i++) {
     let d = new Date();
-    d.setDate(d.getDate() + i); // بنزود عدد الأيام على تاريخ النهاردة
+    d.setDate(d.getDate() + i); 
     
-    let dayName = daysOfWeek[d.getDay()]; // اسم اليوم
-    let dayNum = d.getDate(); // رقم اليوم في الشهر
-    let monthName = monthsOfYear[d.getMonth()]; // اسم الشهر
+    let dayName = daysOfWeek[d.getDay()]; 
+    let dayNum = d.getDate(); 
+    let monthName = monthsOfYear[d.getMonth()]; 
 
-    // بنضيف زرار لكل يوم في المتغير بتاعنا
     daysHTML += `
         <button data-date="${dayName} ${dayNum} ${monthName}" class="date-btn flex-shrink-0 w-20 h-24 cursor-pointer bg-white border border-gray-200 text-gray-700 rounded-xl flex flex-col items-center justify-center gap-1 shadow-sm hover:border-gray-400 transition-colors">
             <span class="text-xs opacity-75">${dayName}</span>
@@ -262,13 +241,11 @@ for (let i = 0; i < 14; i++) {
         </button>
     `;
 }
-// بنرمي الزراير كلها جوه الـ HTML
+
+// Render generated days
 daysContainer.innerHTML = daysHTML;
 
-
-// 8. توليد الأوقات المتاحة
-
-// === كود رسم زراير الأوقات في الشاشة ===
+// Render static time slots
 const timesContainer = document.getElementById('times-container');
 const availableTimesList = [
     '01:30 م', '02:00 م', '02:30 م', '03:00 م',
@@ -283,21 +260,20 @@ availableTimesList.forEach(time => {
     timesHTML += `<button class="time-btn py-2 border border-gray-200 bg-white text-gray-700 rounded-lg hover:border-white cursor-pointer transition-colors font-medium text-sm">${time}</button>`;
 });
 timesContainer.innerHTML = timesHTML;
-// ==========================================
-// 9. تفعيل الكليك على الأيام والأوقات (مع جلب المواعيد المحجوزة من فايربيز)
+
+// Time Slot Validation: Fetch and process availability
 const dateButtons = document.querySelectorAll('.date-btn');
 const timeButtons = document.querySelectorAll('.time-btn');
 
-// دالة لجلب المواعيد وقفلها
 const checkAvailableTimes = async () => {
-    // 1. تصفير كل زراير الأوقات لفتحها من جديد
+    // Reset all time buttons to default active state
     timeButtons.forEach(timeBtn => {
         timeBtn.disabled = false;
         timeBtn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100', 'bg-black', 'text-white', 'border-black', 'bg-red-50', 'text-red-400', 'border-red-100');
         timeBtn.classList.add('bg-white', 'text-gray-700', 'border-gray-200', 'hover:border-black');
     });
 
-    // 2. تطبيق منطق إجازة الإثنين
+    // Business Logic: Block Mondays entirely
     const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
     if (selectedDayBtn) {
         const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
@@ -308,33 +284,30 @@ const checkAvailableTimes = async () => {
                 timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
             });
             bookingState.time = null;
-            return; // توقف هنا وماتسألش فايربيز لأن اليوم كله إجازة
+            return; 
         }
     }
 
-    // --- كمين الأيام المغلقة استثنائياً من الداش بورد ---
+    // Check dynamic day-offs configured via admin dashboard
     if (bookingState.date) {
         try {
-            // هنجيب كل الأيام المقفولة من فايربيز
             const closedSnapshot = await getDocs(collection(db, "closedDates"));
             let isDayClosed = false;
 
-            // قواميس الترجمة للعربي
+            // Localization dictionaries
             const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
             closedSnapshot.forEach((docSnap) => {
-                // التاريخ اللي متسجل في الداش بورد (مثال: "2026-05-14")
                 const dbDate = docSnap.data().date; 
                 
-                // نفصصه عشان نظبطه على التوقيت المحلي بدون لغبطة
+                // Normalize timezone
                 const [year, month, day] = dbDate.split('-');
                 const d = new Date(year, month - 1, day);
                 
-                // نجمعه تاني ونترجمه لنفس شكل الموقع بالظبط
                 const formattedDbDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
                 
-                // نقارنه باليوم اللي الزبون داس عليه
+                // Verify if selected date matches a closed day
                 if (formattedDbDate === bookingState.date) {
                     const blockedBarber = docSnap.data().barber || "الكل";
                     
@@ -344,7 +317,7 @@ const checkAvailableTimes = async () => {
                 }
             });
 
-            // لو طلع متطابق مع يوم مقفول، نقفل الزراير
+            // Disable UI if the target barber or salon is off
             if (isDayClosed) {
                 timeButtons.forEach(timeBtn => {
                     timeBtn.disabled = true;
@@ -354,64 +327,56 @@ const checkAvailableTimes = async () => {
                 bookingState.time = null;
                 
                 alert("عفواً، هذا الحلاق غير متاح اليوم لظروف خاصة. برجاء اختيار يوم آخر أو حلاق آخر.");
-                return; // الفرملة
+                return; 
             }
         } catch (error) {
             console.error("خطأ في التحقق من الأيام المغلقة:", error);
         }
     }
 
-    // 3. سؤال فايربيز عن المواعيد المحجوزة
+    // Fetch specific booked slots for the selected date and barber
     if (!bookingState.barber || !bookingState.date) return;
 
     try {
-        // تجهيز الفلتر
         const q = query(
             collection(db, "bookings"),
             where("barberName", "==", bookingState.barber),
             where("bookingDate", "==", bookingState.date)
         );
 
-        // جلب البيانات
         const querySnapshot = await getDocs(q);
         const bookedTimes = [];
         
         querySnapshot.forEach((doc) => {
-            // لاحظ هنا استخدمنا bookingTime زي ما هي عندك في فايربيز
             if (doc.data().bookingTime) {
                 bookedTimes.push(doc.data().bookingTime);
             }
         });
 
-        // 1. التنظيف العميق للمواعيد اللي جاية من فايربيز (مسح أي حروف مخفية)
+        // Normalize fetched data to prevent mismatch due to hidden characters
         const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
 
-        // 2. قفل المواعيد المحجوزة
+        // Update time slots UI based on availability
         timeButtons.forEach(btn => {
-            // تنظيف وقت الزرار عشان المقارنة تنجح 
             const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
 
             if (cleanBookedTimes.includes(cleanBtnTime)) {
-                // لو محجوز: اقفل الزرار ولونه أحمر
+                // Mark as booked
                 btn.disabled = true;
                 btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white');
                 btn.classList.add('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100');
                 
-                // ضيف كلمة محجوز جنب الوقت لو مش موجودة
                 if (!btn.innerText.includes('(محجوز)')) {
                     btn.innerText = btn.innerText + ' (محجوز)';
                 }
             } else {
-                // لو متاح: لازم نرجع كل حاجة لأصلها عشان لو كان مقفول قبل كده يفتح
-                btn.disabled = false; // افتح الزرار تاني
+                // Mark as available
+                btn.disabled = false; 
                 
-                // شيل الألوان الحمراء والأسود
                 btn.classList.remove('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100', 'bg-black', 'text-white');
                 
-                // رجع الألوان الطبيعية بتاعة الزرار المتاح
                 btn.classList.add('bg-white', 'text-gray-700', 'hover:border-black');
                 
-                // شيل كلمة محجوز
                 btn.innerText = btn.innerText.replace('(محجوز)', '').trim();
             }
         });
@@ -420,32 +385,29 @@ const checkAvailableTimes = async () => {
     }
 };
 
-// تفعيل اختيار اليوم
+// Date Selection Handler
 dateButtons.forEach(button => {
-    // خلينا الـ arrow function هنا async عشان نقدر نستنى الدالة اللي بتكلم فايربيز
     button.addEventListener('click', async () => {
-        // تصفير كل زراير الأيام
         dateButtons.forEach(btn => {
             btn.classList.remove('bg-black', 'text-white');
             btn.classList.add('bg-white', 'text-gray-700');
         });
         
-        // تفعيل الزرار الحالي لليوم
         button.classList.remove('bg-white', 'text-gray-700');
         button.classList.add('bg-black', 'text-white');
         
         bookingState.date = button.getAttribute('data-date');
         console.log('اليوم المختار:', bookingState.date);
         
-        // تفريغ الوقت القديم عشان العميل يضطر يختار وقت جديد لليوم الجديد
+        // Reset time selection upon changing dates
         bookingState.time = null; 
 
-        // تشغيل دالة البحث في فايربيز
+        // Validate availability for the newly selected date
         await checkAvailableTimes();
     });
 });
 
-// تفعيل اختيار الوقت
+// Time Selection Handler
 timeButtons.forEach(button => {
     button.addEventListener('click', () => {
         if (button.disabled) return; 
@@ -465,24 +427,21 @@ timeButtons.forEach(button => {
     });
 });
 
-// 10. العودة للرئيسية وتصفير البيانات
+// Reset Application State
 document.getElementById('return-home-btn').addEventListener('click', () => {
-    // تصفير الـ State
     bookingState.barber = null;
     bookingState.date = null;
     bookingState.time = null;
     bookingState.userName = '';
     bookingState.userPhone = '';
 
-    // تفريغ الفورم
     document.getElementById('user-name').value = '';
     document.getElementById('user-phone').value = '';
 
-    // الرجوع للشاشة الأولى
     showSection(sections.welcome);
 });
 
-// === كود تشغيل نافذة الاستعلام والإلغاء ===
+// Booking Lookup and Cancellation Modal
 const searchModal = document.getElementById('search-modal');
 const openSearchModalBtn = document.getElementById('open-search-modal-btn');
 const closeSearchModalBtn = document.getElementById('close-search-modal-btn');
@@ -490,18 +449,16 @@ const searchBtn = document.getElementById('search-booking-btn');
 const phoneInput = document.getElementById('search-phone');
 const resultsContainer = document.getElementById('search-results');
 
-// 1. فتح النافذة
 if (openSearchModalBtn) {
     openSearchModalBtn.addEventListener('click', () => {
         searchModal.classList.remove('hidden');
     });
 }
 
-// 2. قفل النافذة (من علامة X أو بالضغط برة المربع)
 const closeModal = () => {
     searchModal.classList.add('hidden');
-    phoneInput.value = ''; // تنظيف الحقل
-    resultsContainer.innerHTML = ''; // تنظيف النتائج
+    phoneInput.value = ''; 
+    resultsContainer.innerHTML = ''; 
 };
 
 if (closeSearchModalBtn) {
@@ -513,7 +470,7 @@ if (searchModal) {
     });
 }
 
-// 3. البحث في فايربيز
+// Search bookings by phone number
 if (searchBtn) {
     searchBtn.addEventListener('click', async () => {
         const phone = phoneInput.value.trim();
@@ -560,7 +517,7 @@ if (searchBtn) {
     });
 }
 
-// 4. دالة الإلغاء
+// Cancel Booking Handler
 window.cancelBooking = async (docId) => {
     if (confirm("هل أنت متأكد من إلغاء هذا الموعد؟")) {
         try {
@@ -571,7 +528,7 @@ window.cancelBooking = async (docId) => {
                 const data = docSnap.data();
                 await deleteDoc(docRef);
 
-                // --- بداية كود Web3Forms للإلغاء ---
+                // Send cancellation email notification
                 try {
                     const cancelEmailResponse = await fetch("https://api.web3forms.com/submit", {
                         method: "POST",
@@ -601,7 +558,6 @@ window.cancelBooking = async (docId) => {
                 } catch (emailError) {
                     console.error("خطأ في الاتصال بـ Web3Forms:", emailError);
                 }
-                // --- نهاية كود Web3Forms للإلغاء ---
 
                 alert("تم إلغاء الحجز وإبلاغ الصالون بنجاح.");
                 location.reload();
@@ -612,10 +568,9 @@ window.cancelBooking = async (docId) => {
     }
 };
 
-// دالة التنظيف التلقائي للمواعيد القديمة
+// Database Maintenance: Clean up past bookings
 async function cleanupOldBookings() {
     try {
-        // 1. قاموس الشهور عشان الجافا سكريبت تفهم العربي
         const arabicMonths = {
             "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5,
             "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
@@ -624,27 +579,26 @@ async function cleanupOldBookings() {
         const q = query(collection(db, "bookings"));
         const querySnapshot = await getDocs(q);
         
-        // تاريخ النهارده بالضبط (ونصفر الساعات عشان نقارن بالأيام بس)
+        // Set reference date to start of today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         querySnapshot.forEach(async (document) => {
             const data = document.data();
-            const bookingDateStr = data.bookingDate; // ده التاريخ المتخزن عندك (مثال: الخميس 7 مايو)
+            const bookingDateStr = data.bookingDate; 
             
             if (bookingDateStr) {
-                // بنفصل النص عشان نطلع الرقم والشهر
                 const parts = bookingDateStr.split(" "); 
                 if (parts.length >= 3) {
-                    const day = parseInt(parts[1]); // رقم اليوم (مثال: 7)
-                    const monthName = parts[2]; // اسم الشهر (مثال: مايو)
+                    const day = parseInt(parts[1]); 
+                    const monthName = parts[2]; 
                     const month = arabicMonths[monthName];
 
                     if (month !== undefined && !isNaN(day)) {
                         const currentYear = new Date().getFullYear();
                         const bookingDate = new Date(currentYear, month, day);
                         
-                        // 2. المقارنة الحاسمة: لو تاريخ الحجز أقدم من النهارده، امسحه!
+                        // Delete document if booking date has passed
                         if (bookingDate < today) {
                             await deleteDoc(doc(db, "bookings", document.id));
                             console.log(`تم مسح حجز قديم بتاريخ: ${bookingDateStr}`);
@@ -658,5 +612,5 @@ async function cleanupOldBookings() {
     }
 }
 
-// تشغيل دالة التنظيف التلقائي عند فتح الموقع
+// Trigger maintenance on application load
 cleanupOldBookings();
