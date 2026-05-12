@@ -266,21 +266,15 @@ const dateButtons = document.querySelectorAll('.date-btn');
 const timeButtons = document.querySelectorAll('.time-btn');
 
 const checkAvailableTimes = async () => {
-    // Reset all time buttons to default active state
-    timeButtons.forEach(timeBtn => {
-        timeBtn.disabled = false;
-        timeBtn.classList.remove('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100', 'bg-black', 'text-white', 'border-black', 'bg-red-50', 'text-red-400', 'border-red-100');
-        timeBtn.classList.add('bg-white', 'text-gray-700', 'border-gray-200', 'hover:border-black');
-    });
-
-    // Business Logic: Block Mondays entirely
+    // Business Logic: Block Mondays entirely as a default off-day
     const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
     if (selectedDayBtn) {
         const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
         if (dayName === 'الإثنين') {
-            timeButtons.forEach(timeBtn => {
+            timeButtons.forEach((timeBtn, index) => {
+                timeBtn.innerText = availableTimesList[index]; 
                 timeBtn.disabled = true;
-                timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black');
+                timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'cursor-wait');
                 timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
             });
             bookingState.time = null;
@@ -288,55 +282,49 @@ const checkAvailableTimes = async () => {
         }
     }
 
-    // Check dynamic day-offs configured via admin dashboard
+    // Fetch and validate dynamic day-offs configured via Admin Dashboard
     if (bookingState.date) {
         try {
             const closedSnapshot = await getDocs(collection(db, "closedDates"));
             let isDayClosed = false;
 
-            // Localization dictionaries
             const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
             closedSnapshot.forEach((docSnap) => {
                 const dbDate = docSnap.data().date; 
-                
-                // Normalize timezone
                 const [year, month, day] = dbDate.split('-');
                 const d = new Date(year, month - 1, day);
                 
                 const formattedDbDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
                 
-                // Verify if selected date matches a closed day
                 if (formattedDbDate === bookingState.date) {
                     const blockedBarber = docSnap.data().barber || "الكل";
-                    
                     if (blockedBarber === "الكل" || blockedBarber === bookingState.barber) {
                         isDayClosed = true;
                     }
                 }
             });
 
-            // Disable UI if the target barber or salon is off
             if (isDayClosed) {
-                timeButtons.forEach(timeBtn => {
+                timeButtons.forEach((timeBtn, index) => {
+                    timeBtn.innerText = availableTimesList[index]; 
                     timeBtn.disabled = true;
-                    timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black');
+                    timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'cursor-wait');
                     timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
                 });
                 bookingState.time = null;
-                
                 alert("عفواً، هذا الحلاق غير متاح اليوم لظروف خاصة. برجاء اختيار يوم آخر أو حلاق آخر.");
                 return; 
             }
         } catch (error) {
-            console.error("خطأ في التحقق من الأيام المغلقة:", error);
+            console.error("Error validating closed dates:", error);
         }
     }
 
-    // Fetch specific booked slots for the selected date and barber
     if (!bookingState.barber || !bookingState.date) return;
 
+    // Fetch active bookings from Firestore to identify reserved slots
     try {
         const q = query(
             collection(db, "bookings"),
@@ -344,48 +332,43 @@ const checkAvailableTimes = async () => {
             where("bookingDate", "==", bookingState.date)
         );
 
-        const querySnapshot = await getDocs(q);
-        const bookedTimes = [];
+        // Network latency occurs here; UI is currently in Loading State
+        const querySnapshot = await getDocs(q); 
         
+        const bookedTimes = [];
         querySnapshot.forEach((doc) => {
             if (doc.data().bookingTime) {
                 bookedTimes.push(doc.data().bookingTime);
             }
         });
 
-        // Normalize fetched data to prevent mismatch due to hidden characters
+        // Normalize fetched data to prevent UI mismatches
         const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
 
-        // Update time slots UI based on availability
-        timeButtons.forEach(btn => {
-            const cleanBtnTime = btn.innerText.replace('(محجوز)', '').replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
+        // Process network response and update time slots UI (Resolves Loading State)
+        timeButtons.forEach((btn, index) => {
+            btn.innerText = availableTimesList[index];
+            const cleanBtnTime = btn.innerText.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
 
             if (cleanBookedTimes.includes(cleanBtnTime)) {
-                // Mark as booked
+                // Mark slot as booked
                 btn.disabled = true;
-                btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white');
+                btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white', 'bg-gray-100', 'cursor-wait', 'text-gray-400');
                 btn.classList.add('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100');
-                
-                if (!btn.innerText.includes('(محجوز)')) {
-                    btn.innerText = btn.innerText + ' (محجوز)';
-                }
+                btn.innerText = btn.innerText + ' (محجوز)';
             } else {
-                // Mark as available
+                // Mark slot as available
                 btn.disabled = false; 
-                
-                btn.classList.remove('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100', 'bg-black', 'text-white');
-                
+                btn.classList.remove('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100', 'bg-black', 'text-white', 'bg-gray-100', 'cursor-wait', 'text-gray-400');
                 btn.classList.add('bg-white', 'text-gray-700', 'hover:border-black');
-                
-                btn.innerText = btn.innerText.replace('(محجوز)', '').trim();
             }
         });
     } catch (error) {
-        console.error("خطأ في جلب المواعيد:", error);
+        console.error("Error fetching available times:", error);
     }
 };
 
-// Date Selection Handler
+// Date Selection Handler (Loading State added here)
 dateButtons.forEach(button => {
     button.addEventListener('click', async () => {
         dateButtons.forEach(btn => {
@@ -397,12 +380,16 @@ dateButtons.forEach(button => {
         button.classList.add('bg-black', 'text-white');
         
         bookingState.date = button.getAttribute('data-date');
-        console.log('اليوم المختار:', bookingState.date);
-        
-        // Reset time selection upon changing dates
         bookingState.time = null; 
 
-        // Validate availability for the newly selected date
+        // Loading State: Disable buttons while fetching from Firebase
+        timeButtons.forEach(timeBtn => {
+            timeBtn.disabled = true;
+            timeBtn.innerText = 'Loading';
+            timeBtn.classList.remove('bg-white', 'hover:border-black', 'text-gray-700', 'bg-red-50', 'text-red-400');
+            timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-wait', 'border-gray-100');
+        });
+
         await checkAvailableTimes();
     });
 });
