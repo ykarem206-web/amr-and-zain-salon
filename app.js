@@ -265,12 +265,22 @@ timesContainer.innerHTML = timesHTML;
 const dateButtons = document.querySelectorAll('.date-btn');
 const timeButtons = document.querySelectorAll('.time-btn');
 
+// Concurrency Control: Token-based system to prevent async race conditions
+let activeFetchToken = 0;
+
 const checkAvailableTimes = async () => {
+    // Generate a unique token for the current fetch request
+    activeFetchToken++;
+    const myToken = activeFetchToken;
+
     // Business Logic: Block Mondays entirely as a default off-day
     const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
     if (selectedDayBtn) {
         const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
         if (dayName === 'الإثنين') {
+            // Abort operation if a newer request was initiated
+            if (myToken !== activeFetchToken) return;
+
             timeButtons.forEach((timeBtn, index) => {
                 timeBtn.innerText = availableTimesList[index]; 
                 timeBtn.disabled = true;
@@ -286,8 +296,11 @@ const checkAvailableTimes = async () => {
     if (bookingState.date) {
         try {
             const closedSnapshot = await getDocs(collection(db, "closedDates"));
-            let isDayClosed = false;
+            
+            // Token Validation: Abort if the user selected a different date during the network request
+            if (myToken !== activeFetchToken) return;
 
+            let isDayClosed = false;
             const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
             const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
 
@@ -324,8 +337,6 @@ const checkAvailableTimes = async () => {
 
     if (!bookingState.barber || !bookingState.date) return;
 
-    const currentFetchingDate = bookingState.date; 
-
     // Fetch active bookings from Firestore to identify reserved slots
     try {
         const q = query(
@@ -334,13 +345,10 @@ const checkAvailableTimes = async () => {
             where("bookingDate", "==", bookingState.date)
         );
 
-        // Network latency occurs here; UI is currently in Loading State
         const querySnapshot = await getDocs(q); 
         
-        if (bookingState.date !== currentFetchingDate) {
-            console.log("تم إلغاء عرض البيانات لأن العميل انتقل ليوم آخر.");
-            return; 
-        }
+        // Final Token Validation: Ensure the response matches the latest user selection before updating the UI
+        if (myToken !== activeFetchToken) return;
 
         const bookedTimes = [];
         querySnapshot.forEach((doc) => {
@@ -352,7 +360,7 @@ const checkAvailableTimes = async () => {
         // Normalize fetched data to prevent UI mismatches
         const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
 
-        // Process network response and update time slots UI (Resolves Loading State)
+        // Process network response and update time slots UI
         timeButtons.forEach((btn, index) => {
             btn.innerText = availableTimesList[index];
             const cleanBtnTime = btn.innerText.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
