@@ -324,6 +324,8 @@ const checkAvailableTimes = async () => {
 
     if (!bookingState.barber || !bookingState.date) return;
 
+    const currentFetchingDate = bookingState.date; 
+
     // Fetch active bookings from Firestore to identify reserved slots
     try {
         const q = query(
@@ -335,6 +337,11 @@ const checkAvailableTimes = async () => {
         // Network latency occurs here; UI is currently in Loading State
         const querySnapshot = await getDocs(q); 
         
+        if (bookingState.date !== currentFetchingDate) {
+            console.log("تم إلغاء عرض البيانات لأن العميل انتقل ليوم آخر.");
+            return; 
+        }
+
         const bookedTimes = [];
         querySnapshot.forEach((doc) => {
             if (doc.data().bookingTime) {
