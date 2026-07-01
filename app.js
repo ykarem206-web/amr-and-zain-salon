@@ -269,18 +269,64 @@ const timeButtons = document.querySelectorAll('.time-btn');
 let activeFetchToken = 0;
 
 const checkAvailableTimes = async () => {
-    // Generate a unique token for the current fetch request
+    // Concurrency Control: Issue a unique token for the current fetch request to prevent async race conditions
     activeFetchToken++;
     const myToken = activeFetchToken;
 
-    // Business Logic: Block Mondays entirely as a default off-day
-    const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
-    if (selectedDayBtn) {
-        const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
-        if (dayName === 'الإثنين') {
-            // Abort operation if a newer request was initiated
-            if (myToken !== activeFetchToken) return;
+    // Wrap the entire execution in a try-catch block to ensure graceful UI degradation on failure
+    try {
+        // --- Phase 1: Default Day-Off Rule (Block all Mondays) ---
+        const selectedDayBtn = Array.from(dateButtons).find(btn => btn.classList.contains('bg-black'));
+        if (selectedDayBtn) {
+            const dayName = selectedDayBtn.querySelector('span.text-xs').innerText;
+            if (dayName === 'الإثنين') {
+                if (myToken !== activeFetchToken) return; // Abort if a newer request exists
+                timeButtons.forEach((timeBtn, index) => {
+                    timeBtn.innerText = availableTimesList[index]; 
+                    timeBtn.disabled = true;
+                    timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'cursor-wait');
+                    timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
+                });
+                bookingState.time = null;
+                return; 
+            }
+        }
 
+        // Early exit: Revert UI to default state if either barber or date is unselected to prevent unnecessary API calls
+        if (!bookingState.barber || !bookingState.date) {
+            timeButtons.forEach((btn, index) => {
+                 btn.innerText = availableTimesList[index];
+                 btn.disabled = false;
+                 btn.classList.remove('cursor-wait', 'bg-gray-100', 'text-gray-400');
+                 btn.classList.add('bg-white', 'text-gray-700');
+            });
+            return;
+        }
+
+        // --- Phase 2: Dynamic Day-Offs (Fetch closed dates configured via Admin Dashboard) ---
+        const closedSnapshot = await getDocs(collection(db, "closedDates"));
+        if (myToken !== activeFetchToken) return;
+
+        let isDayClosed = false;
+        const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+        closedSnapshot.forEach((docSnap) => {
+            const dbDate = docSnap.data().date; 
+            if(!dbDate) return;
+            const [year, month, day] = dbDate.split('-');
+            const d = new Date(year, month - 1, day);
+            const formattedDbDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
+            
+            if (formattedDbDate === bookingState.date) {
+                const blockedBarber = docSnap.data().barber || "الكل";
+                if (blockedBarber === "الكل" || blockedBarber === bookingState.barber) {
+                    isDayClosed = true;
+                }
+            }
+        });
+
+        if (isDayClosed) {
             timeButtons.forEach((timeBtn, index) => {
                 timeBtn.innerText = availableTimesList[index]; 
                 timeBtn.disabled = true;
@@ -290,96 +336,131 @@ const checkAvailableTimes = async () => {
             bookingState.time = null;
             return; 
         }
-    }
 
-    // Fetch and validate dynamic day-offs configured via Admin Dashboard
-    if (bookingState.date) {
-        try {
-            const closedSnapshot = await getDocs(collection(db, "closedDates"));
-            
-            // Token Validation: Abort if the user selected a different date during the network request
-            if (myToken !== activeFetchToken) return;
+        // --- Phase 3: Time Restriction Setup (Prevent bookings within the next 30 minutes) ---
+        const currentYear = new Date().getFullYear();
+        const now = new Date();
+        let selectedDay = null;
+        let selectedMonth = -1;
+        
+        // Safely extract day and month using Regex to prevent silent string parsing errors caused by extra spaces
+        const matchDay = bookingState.date.match(/\d+/);
+        if(matchDay) selectedDay = parseInt(matchDay[0]);
 
-            let isDayClosed = false;
-            const arabicDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-            const arabicMonths = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-
-            closedSnapshot.forEach((docSnap) => {
-                const dbDate = docSnap.data().date; 
-                const [year, month, day] = dbDate.split('-');
-                const d = new Date(year, month - 1, day);
-                
-                const formattedDbDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
-                
-                if (formattedDbDate === bookingState.date) {
-                    const blockedBarber = docSnap.data().barber || "الكل";
-                    if (blockedBarber === "الكل" || blockedBarber === bookingState.barber) {
-                        isDayClosed = true;
-                    }
-                }
-            });
-
-            if (isDayClosed) {
-                timeButtons.forEach((timeBtn, index) => {
-                    timeBtn.innerText = availableTimesList[index]; 
-                    timeBtn.disabled = true;
-                    timeBtn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'cursor-wait');
-                    timeBtn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
-                });
-                bookingState.time = null;
-                alert("عفواً، هذا الحلاق غير متاح اليوم لظروف خاصة. برجاء اختيار يوم آخر أو حلاق آخر.");
-                return; 
+        const arabicMonthsMap = {
+            "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5,
+            "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
+        };
+        
+        for (const [mName, mIndex] of Object.entries(arabicMonthsMap)) {
+            if (bookingState.date.includes(mName)) {
+                selectedMonth = mIndex;
+                break;
             }
-        } catch (error) {
-            console.error("Error validating closed dates:", error);
         }
-    }
 
-    if (!bookingState.barber || !bookingState.date) return;
+        const isToday = (selectedDay !== null && selectedMonth !== -1 && now.getDate() === selectedDay && now.getMonth() === selectedMonth && now.getFullYear() === currentYear);
 
-    // Fetch active bookings from Firestore to identify reserved slots
-    try {
-        const q = query(
+        // --- Phase 4: Parallel Fetching (Retrieve customer bookings and admin-blocked slots simultaneously) ---
+        const bookingsQuery = query(
             collection(db, "bookings"),
             where("barberName", "==", bookingState.barber),
             where("bookingDate", "==", bookingState.date)
         );
 
-        const querySnapshot = await getDocs(q); 
-        
-        // Final Token Validation: Ensure the response matches the latest user selection before updating the UI
+        const blockedQuery = query(
+            collection(db, "blockedSlots"),
+            where("barber", "in", [bookingState.barber, "الكل"])
+        );
+
+        const [bookingsSnap, blockedSnap] = await Promise.all([
+            getDocs(bookingsQuery),
+            getDocs(blockedQuery)
+        ]);
+
         if (myToken !== activeFetchToken) return;
 
-        const bookedTimes = [];
-        querySnapshot.forEach((doc) => {
-            if (doc.data().bookingTime) {
-                bookedTimes.push(doc.data().bookingTime);
+        const allOccupiedTimes = [];
+
+        bookingsSnap.forEach((doc) => {
+            if (doc.data().bookingTime) allOccupiedTimes.push(doc.data().bookingTime);
+        });
+
+        blockedSnap.forEach((docSnap) => {
+            const blockData = docSnap.data();
+            if(!blockData.date || !blockData.time) return;
+            const [year, month, day] = blockData.date.split('-');
+            const d = new Date(year, month - 1, day);
+            const formattedBlockDate = `${arabicDays[d.getDay()]} ${parseInt(day)} ${arabicMonths[d.getMonth()]}`;
+
+            if (formattedBlockDate === bookingState.date) {
+                allOccupiedTimes.push(blockData.time);
             }
         });
 
-        // Normalize fetched data to prevent UI mismatches
-        const cleanBookedTimes = bookedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
+        const cleanOccupiedTimes = allOccupiedTimes.map(t => t.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim());
 
-        // Process network response and update time slots UI
+        // --- Phase 5: UI Rendering (Evaluate all constraints and update time slots) ---
         timeButtons.forEach((btn, index) => {
             btn.innerText = availableTimesList[index];
             const cleanBtnTime = btn.innerText.replace(/[^\d: صم]/g, '').replace(/\s+/g, ' ').trim();
 
-            if (cleanBookedTimes.includes(cleanBtnTime)) {
-                // Mark slot as booked
+            let isTooCloseOrPassed = false;
+
+            if (isToday) {
+                const timeMatch = cleanBtnTime.match(/(\d+):(\d+)\s*(ص|م)/);
+                if (timeMatch) {
+                    let hours = parseInt(timeMatch[1]);
+                    const minutes = parseInt(timeMatch[2]);
+                    const period = timeMatch[3];
+
+                    if (period === 'م' && hours !== 12) hours += 12;
+                    
+                    if (period === 'ص') {
+                        if (hours === 12) {
+                            hours = 24; 
+                        } else if (hours >= 1 && hours <= 5) {
+                            hours += 24; 
+                        }
+                    }
+
+                    const buttonTime = new Date(currentYear, selectedMonth, selectedDay, hours, minutes);
+                    const diffInMinutes = (buttonTime - now) / (1000 * 60);
+
+                    if (diffInMinutes < 30) {
+                        isTooCloseOrPassed = true;
+                    }
+                }
+            }
+
+            if (cleanOccupiedTimes.includes(cleanBtnTime)) {
+                // Slot is booked or blocked by admin
                 btn.disabled = true;
                 btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white', 'bg-gray-100', 'cursor-wait', 'text-gray-400');
                 btn.classList.add('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100');
                 btn.innerText = btn.innerText + ' (محجوز)';
+            } else if (isTooCloseOrPassed) {
+                // Slot violates the 30-minute buffer rule
+                btn.disabled = true;
+                btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white', 'cursor-wait', 'border-red-100', 'bg-red-50', 'text-red-400');
+                btn.classList.add('bg-gray-100', 'text-gray-400', 'cursor-not-allowed', 'border-gray-100');
+                btn.innerText = btn.innerText + ' (غير متاح)';
             } else {
-                // Mark slot as available
+                // Slot is available for booking
                 btn.disabled = false; 
                 btn.classList.remove('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100', 'bg-black', 'text-white', 'bg-gray-100', 'cursor-wait', 'text-gray-400');
                 btn.classList.add('bg-white', 'text-gray-700', 'hover:border-black');
             }
         });
+
     } catch (error) {
-        console.error("Error fetching available times:", error);
+        console.error("Critical error in checkAvailableTimes:", error);
+        timeButtons.forEach((btn, index) => {
+            btn.innerText = availableTimesList[index] || "خطأ";
+            btn.disabled = true;
+            btn.classList.remove('bg-white', 'text-gray-700', 'hover:border-black', 'bg-black', 'text-white', 'cursor-wait');
+            btn.classList.add('bg-red-50', 'text-red-400', 'cursor-not-allowed', 'border-red-100');
+        });
     }
 };
 
