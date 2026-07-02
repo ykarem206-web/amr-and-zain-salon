@@ -32,6 +32,12 @@ function fetchBookings() {
         allBookingsData = [];
         snapshot.forEach((booking) => {
             const data = booking.data();
+
+            if (!data.customerName || !data.bookingDate || !data.bookingTime) {
+                    console.warn("تم تخطي حجز غير مكتمل أو بايظ:", booking.id);
+                    return; 
+            }
+            
             data.id = booking.id;
             allBookingsData.push(data);
         });

@@ -114,8 +114,13 @@ document.getElementById('back-to-datetime').addEventListener('click', () => {
 const bookingForm = document.getElementById('booking-form');
 const confirmBtn = document.getElementById('confirm-booking-btn');
 
+let isSubmitting = false;
+
 bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault(); 
+
+    if (isSubmitting) return;
+    isSubmitting = true;
 
     // Rate limiting: Prevent multiple bookings from the same device in a single day
     const lastBookingDate = localStorage.getItem("salon_booked_date");
@@ -123,12 +128,14 @@ bookingForm.addEventListener('submit', async (e) => {
 
     if (lastBookingDate === today) {
         alert("لقد قمت بتسجيل حجز بالفعل من هذا الجهاز اليوم! برجاء المحاولة في يوم آخر.");
+        isSubmitting = false;
         return;
     }
 
     // Validate phone number length
     if (document.getElementById('user-phone').value.length !== 11) {
         alert("عذراً، يجب إدخال رقم موبايل صحيح مكون من 11 رقم!");
+        isSubmitting = false;
         return;
     }
 
@@ -140,10 +147,13 @@ bookingForm.addEventListener('submit', async (e) => {
 
         if (!checkSnapshot.empty) {
             alert("عذراً! هذا الرقم لديه حجز قادم بالفعل. لا يمكنك حجز موعد جديد حتى تنتهي من موعدك الحالي أو تقوم بإلغائه.");
+            isSubmitting = false;
             return; 
         }
     } catch (error) {
         console.error("خطأ في التحقق من الحجوزات السابقة:", error);
+        isSubmitting = false;
+        return;
     }
 
     bookingState.userName = document.getElementById('user-name').value;
@@ -153,6 +163,24 @@ bookingForm.addEventListener('submit', async (e) => {
     confirmBtn.innerText = 'جاري تأكيد الحجز وإرسال الإشعار...';
     confirmBtn.disabled = true;
     confirmBtn.classList.add('opacity-70', 'cursor-not-allowed');
+
+    if (
+    !bookingState.barber || bookingState.barber.trim() === "" ||
+    !bookingState.date || bookingState.date.trim() === "" ||
+    !bookingState.time || bookingState.time.trim() === "" ||
+    !document.getElementById('user-name').value.trim() ||
+    !document.getElementById('user-phone').value.trim()
+) {
+    console.error("🚨 Security Alert: Blocked an empty or incomplete database write attempt.");
+    alert("عذراً، حدث خطأ في النظام وتأثرت بيانات الحجز. برجاء تحديث الصفحة وإعادة المحاولة.");
+    
+    confirmBtn.innerText = originalBtnText;
+    confirmBtn.disabled = false;
+    confirmBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+    
+    isSubmitting = false;
+    return; 
+}
 
     try {
         // Save booking to Firestore
@@ -216,6 +244,8 @@ bookingForm.addEventListener('submit', async (e) => {
         confirmBtn.innerText = originalBtnText;
         confirmBtn.disabled = false;
         confirmBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+
+        isSubmitting = false;
     }
 });
 
